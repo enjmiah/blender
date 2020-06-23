@@ -964,6 +964,12 @@ static void rna_def_gpencil_stroke_point(BlenderRNA *brna)
   RNA_def_property_ui_text(prop, "Pressure", "Pressure of tablet at point when drawing it");
   RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_update");
 
+  prop = RNA_def_property(srna, "time", PROP_FLOAT, PROP_UNSIGNED);
+  RNA_def_property_float_sdna(prop, NULL, "time");
+  RNA_def_property_range(prop, 0.0f, FLT_MAX);
+  RNA_def_property_ui_text(prop, "Time", "Time at which the point was drawn");
+  RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_update");
+
   prop = RNA_def_property(srna, "strength", PROP_FLOAT, PROP_FACTOR);
   RNA_def_property_float_sdna(prop, NULL, "strength");
   RNA_def_property_range(prop, 0.0f, 1.0f);
@@ -1254,6 +1260,27 @@ static void rna_def_gpencil_stroke(BlenderRNA *brna)
   RNA_def_property_ui_text(prop, "UV Scale", "Scale of the UV");
   RNA_def_parameter_clear_flags(prop, PROP_ANIMATABLE, 0);
   RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_uv_update");
+
+  /* Stroke init time */
+  // prop = RNA_def_property(srna, "init_time", PROP_FLOAT, PROP_NONE);
+  // RNA_def_property_float_sdna(prop, NULL, "inittime");
+  // RNA_def_property_range(prop, 0.f, FLT_MAX);
+  // RNA_def_property_ui_text(prop, "Initialization time", "Time of stroke initialization");
+  // RNA_def_parameter_clear_flags(prop, PROP_ANIMATABLE, 0);
+  // RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_update");
+
+  prop = RNA_def_property(srna, "init_time_s_hi", PROP_INT, PROP_UNSIGNED);
+  RNA_def_property_int_sdna(prop, NULL, "inittime_s_hi");
+  RNA_def_parameter_clear_flags(prop, PROP_ANIMATABLE, 0);
+  RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_update");
+  prop = RNA_def_property(srna, "init_time_s_lo", PROP_INT, PROP_UNSIGNED);
+  RNA_def_property_int_sdna(prop, NULL, "inittime_s_lo");
+  RNA_def_parameter_clear_flags(prop, PROP_ANIMATABLE, 0);
+  RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_update");
+  prop = RNA_def_property(srna, "init_time_ns", PROP_INT, PROP_UNSIGNED);
+  RNA_def_property_int_sdna(prop, NULL, "inittime_ns");
+  RNA_def_parameter_clear_flags(prop, PROP_ANIMATABLE, 0);
+  RNA_def_property_update(prop, NC_GPENCIL | ND_DATA, "rna_GPencil_update");
 
   /* Vertex Color for Fill. */
   prop = RNA_def_property(srna, "vertex_color_fill", PROP_FLOAT, PROP_COLOR);

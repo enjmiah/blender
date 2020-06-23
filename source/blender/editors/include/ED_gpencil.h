@@ -90,7 +90,7 @@ typedef struct tGPspoint {
   float x, y;          /* x and y coordinates of cursor (in relative to area) */
   float pressure;      /* pressure of tablet at this point */
   float strength;      /* pressure of tablet at this point for alpha factor */
-  float time;          /* Time relative to stroke start (used when converting to path) */
+  double time;         /* Time relative to stroke start (used when converting to path) */
   float uv_fac;        /* factor of uv along the stroke */
   float uv_rot;        /* uv rotation for dor mode */
   float rnd[3];        /* rnd value */

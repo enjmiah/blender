@@ -211,6 +211,10 @@ typedef struct bGPDstroke {
 
   /** Init time of stroke. */
   double inittime;
+  int inittime_s_hi;
+  int inittime_s_lo;
+  int inittime_ns;
+  int _pad_inittime;
 
   /** Color name. */
   char colorname[128] DNA_DEPRECATED;

@@ -1526,7 +1526,7 @@ PyObject *pyrna_prop_to_py(PointerRNA *ptr, PropertyRNA *prop)
       ret = PyLong_FromLong(RNA_property_int_get(ptr, prop));
       break;
     case PROP_FLOAT:
-      ret = PyFloat_FromDouble(RNA_property_float_get(ptr, prop));
+      ret = PyFloat_FromDouble(RNA_property_double_get(ptr, prop));
       break;
     case PROP_STRING: {
       const int subtype = RNA_property_subtype(prop);

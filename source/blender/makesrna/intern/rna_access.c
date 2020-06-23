@@ -1514,6 +1514,27 @@ int RNA_property_float_clamp(PointerRNA *ptr, PropertyRNA *prop, float *value)
   }
 }
 
+int RNA_property_double_clamp(PointerRNA *ptr, PropertyRNA *prop, double *value)
+{
+  float fmin, fmax;
+
+  RNA_property_float_range(ptr, prop, &fmin, &fmax);
+
+  double min = fmin, max = fmax;
+
+  if (*value < min) {
+    *value = min;
+    return -1;
+  }
+  else if (*value > max) {
+    *value = max;
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
 int RNA_property_int_clamp(PointerRNA *ptr, PropertyRNA *prop, int *value)
 {
   int min, max;
@@ -2989,6 +3010,75 @@ void RNA_property_float_set(PointerRNA *ptr, PropertyRNA *prop, float value)
     IDProperty *group;
 
     RNA_property_float_clamp(ptr, prop, &value);
+
+    val.f = value;
+
+    group = RNA_struct_idprops(ptr, 1);
+    if (group) {
+      IDP_AddToGroup(group, IDP_New(IDP_FLOAT, &val, prop->identifier));
+    }
+  }
+}
+
+double RNA_property_double_get(PointerRNA *ptr, PropertyRNA *prop)
+{
+  FloatPropertyRNA *fprop = (FloatPropertyRNA *)prop;
+  IDProperty *idprop;
+
+  BLI_assert(RNA_property_type(prop) == PROP_FLOAT);
+  BLI_assert(RNA_property_array_check(prop) == false);
+
+  if ((idprop = rna_idproperty_check(&prop, ptr))) {
+    if (idprop->type == IDP_FLOAT) {
+      return IDP_Float(idprop);
+    }
+    else {
+      return IDP_Double(idprop);
+    }
+  }
+  else if (fprop->get) {
+    return fprop->get(ptr);
+  }
+  else if (fprop->get_ex) {
+    return fprop->get_ex(ptr, prop);
+  }
+  else {
+    return fprop->defaultvalue;
+  }
+}
+
+void RNA_property_double_set(PointerRNA *ptr, PropertyRNA *prop, double value)
+{
+  FloatPropertyRNA *fprop = (FloatPropertyRNA *)prop;
+  IDProperty *idprop;
+
+  BLI_assert(RNA_property_type(prop) == PROP_FLOAT);
+  BLI_assert(RNA_property_array_check(prop) == false);
+  /* useful to check on bad values but set function should clamp */
+  /* BLI_assert(RNA_property_float_clamp(ptr, prop, &value) == 0); */
+
+  if ((idprop = rna_idproperty_check(&prop, ptr))) {
+    RNA_property_double_clamp(ptr, prop, &value);
+    if (idprop->type == IDP_FLOAT) {
+      IDP_Float(idprop) = value;
+    }
+    else {
+      IDP_Double(idprop) = value;
+    }
+
+    rna_idproperty_touch(idprop);
+  }
+  else if (fprop->set) {
+    fprop->set(ptr, value);
+  }
+  else if (fprop->set_ex) {
+    fprop->set_ex(ptr, prop, value);
+  }
+  else if (prop->flag & PROP_EDITABLE) {
+    IDPropertyTemplate val = {0};
+    IDProperty *group;
+
+    RNA_property_double_clamp(ptr, prop, &value);
 
     val.f = value;
 
@@ -6278,6 +6368,31 @@ void RNA_float_set(PointerRNA *ptr, const char *name, float value)
 
   if (prop) {
     RNA_property_float_set(ptr, prop, value);
+  }
+  else {
+    printf("%s: %s.%s not found.\n", __func__, ptr->type->identifier, name);
+  }
+}
+
+double RNA_double_get(PointerRNA *ptr, const char *name)
+{
+  PropertyRNA *prop = RNA_struct_find_property(ptr, name);
+
+  if (prop) {
+    return RNA_property_double_get(ptr, prop);
+  }
+  else {
+    printf("%s: %s.%s not found.\n", __func__, ptr->type->identifier, name);
+    return 0;
+  }
+}
+
+void RNA_double_set(PointerRNA *ptr, const char *name, double value)
+{
+  PropertyRNA *prop = RNA_struct_find_property(ptr, name);
+
+  if (prop) {
+    RNA_property_double_set(ptr, prop, value);
   }
   else {
     printf("%s: %s.%s not found.\n", __func__, ptr->type->identifier, name);

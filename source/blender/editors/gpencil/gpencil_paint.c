@@ -89,6 +89,8 @@
 /* ******************************************* */
 /* 'Globals' and Defines */
 
+static const double invalid_time = 9999.0;
+
 /* values for tGPsdata->status */
 typedef enum eGPencil_PaintStatus {
   GP_STATUS_IDLING = 0, /* stroke isn't in progress yet */
@@ -583,6 +585,7 @@ static void gp_smooth_buffer(tGPsdata *p, float inf, int idx)
   float a[2], b[2], c[2], d[2];
   float pressure = 0.0f;
   float strength = 0.0f;
+  //double time = 0.0;
   const float average_fac = 1.0f / steps;
 
   /* Compute smoothed coordinate by taking the ones nearby */
@@ -591,24 +594,28 @@ static void gp_smooth_buffer(tGPsdata *p, float inf, int idx)
     madd_v2_v2fl(sco, a, average_fac);
     pressure += pta->pressure * average_fac;
     strength += pta->strength * average_fac;
+    //time += pta->time * average_fac;
   }
   if (ptb) {
     copy_v2_v2(b, &ptb->x);
     madd_v2_v2fl(sco, b, average_fac);
     pressure += ptb->pressure * average_fac;
     strength += ptb->strength * average_fac;
+    //time += ptb->time * average_fac;
   }
   if (ptc) {
     copy_v2_v2(c, &ptc->x);
     madd_v2_v2fl(sco, c, average_fac);
     pressure += ptc->pressure * average_fac;
     strength += ptc->strength * average_fac;
+    //time += ptc->time * average_fac;
   }
   if (ptd) {
     copy_v2_v2(d, &ptd->x);
     madd_v2_v2fl(sco, d, average_fac);
     pressure += ptd->pressure * average_fac;
     strength += ptd->strength * average_fac;
+    //time += ptd->time * average_fac;
   }
 
   /* Based on influence factor, blend between original and optimal smoothed coordinate but not
@@ -621,6 +628,8 @@ static void gp_smooth_buffer(tGPsdata *p, float inf, int idx)
   ptc->pressure = interpf(ptc->pressure, pressure, inf);
   /* Interpolate strength. */
   ptc->strength = interpf(ptc->strength, strength, inf);
+  /* Interpolate time. */
+  //ptc->time = interpf(ptc->time, time, inf);
 }
 
 /* Helper: Apply smooth to segment from Index to Index */
@@ -649,37 +658,44 @@ static void gp_smooth_segment(bGPdata *gpd, const float inf, int from_idx, int t
     float sco[2] = {0.0f};
     float pressure = 0.0f;
     float strength = 0.0f;
+    //double time = 0.0;
 
     /* Compute smoothed coordinate by taking the ones nearby */
     if (pta) {
       madd_v2_v2fl(sco, &pta->x, average_fac);
       pressure += pta->pressure * average_fac;
       strength += pta->strength * average_fac;
+      //time += pta->time * average_fac;
     }
     else {
       madd_v2_v2fl(sco, &ptc->x, average_fac);
       pressure += ptc->pressure * average_fac;
       strength += ptc->strength * average_fac;
+      //time += ptc->time * average_fac;
     }
 
     if (ptb) {
       madd_v2_v2fl(sco, &ptb->x, average_fac);
       pressure += ptb->pressure * average_fac;
       strength += ptb->strength * average_fac;
+      //time += ptb->time * average_fac;
     }
     else {
       madd_v2_v2fl(sco, &ptc->x, average_fac);
       pressure += ptc->pressure * average_fac;
       strength += ptc->strength * average_fac;
+      //time += ptc->time * average_fac;
     }
 
     madd_v2_v2fl(sco, &ptc->x, average_fac);
     pressure += ptc->pressure * average_fac;
     strength += ptc->strength * average_fac;
+    //time += ptc->time * average_fac;
 
     madd_v2_v2fl(sco, &ptd->x, average_fac);
     pressure += ptd->pressure * average_fac;
     strength += ptd->strength * average_fac;
+    //time += ptd->time * average_fac;
 
     /* Based on influence factor, blend between original and optimal smoothed coordinate. */
     interp_v2_v2v2(&ptc->x, &ptc->x, sco, inf);
@@ -688,6 +704,8 @@ static void gp_smooth_segment(bGPdata *gpd, const float inf, int from_idx, int t
     ptc->pressure = interpf(ptc->pressure, pressure, inf);
     /* Interpolate strength. */
     ptc->strength = interpf(ptc->strength, strength, inf);
+    /* Interpolate time. */
+    //ptc->time = interpf(ptc->time, time, inf);
   }
 }
 
@@ -991,6 +1009,11 @@ static void gp_stroke_newfrombuffer(tGPsdata *p)
   copy_v2_v2(gps->aspect_ratio, brush->gpencil_settings->aspect_ratio);
   gps->flag = gpd->runtime.sbuffer_sflag;
   gps->inittime = p->inittime;
+  const int64_t inittime_i = (int64_t)p->inittime;
+  gps->inittime_s_hi = 0xffffffffL & (inittime_i >> 32);
+  gps->inittime_s_lo = 0xffffffffL & (inittime_i);
+  double discard;
+  gps->inittime_ns = 0xffffffffL & (uint32_t)(modf(p->inittime, &discard) * 1000000000.0);
   gps->uv_scale = 1.0f;
 
   /* allocate enough memory for a continuous array for storage points */
@@ -2918,7 +2941,7 @@ static void gpencil_draw_apply_event(bContext *C,
   RNA_float_set(&itemptr, "pressure", p->pressure);
   RNA_boolean_set(&itemptr, "is_start", (p->flags & GP_PAINTFLAG_FIRSTRUN) != 0);
 
-  RNA_float_set(&itemptr, "time", p->curtime - p->inittime);
+  RNA_double_set(&itemptr, "time", p->curtime - p->inittime);
 
   /* apply the current latest drawing point */
   gpencil_draw_apply(C, op, p, depsgraph);
@@ -2956,7 +2979,7 @@ static int gpencil_draw_exec(bContext *C, wmOperator *op)
     p->mval[0] = mousef[0];
     p->mval[1] = mousef[1];
     p->pressure = RNA_float_get(&itemptr, "pressure");
-    p->curtime = (double)RNA_float_get(&itemptr, "time") + p->inittime;
+    p->curtime = RNA_double_get(&itemptr, "time") + p->inittime;
 
     if (RNA_boolean_get(&itemptr, "is_start")) {
       /* if first-run flag isn't set already (i.e. not true first stroke),
@@ -3349,6 +3372,7 @@ static void gpencil_add_arc_points(tGPsdata *p, float mval[2], int segments)
     /* Set pressure and strength equals to previous. It will be smoothed later. */
     pt->pressure = pt_prev->pressure;
     pt->strength = pt_prev->strength;
+    pt->time = invalid_time;
     /* Interpolate vertex color. */
     interp_v4_v4v4(
         pt->vert_color, pt_before->vert_color, pt_prev->vert_color, stepcolor * (i + 1));
@@ -3414,6 +3438,7 @@ static void gpencil_add_guide_points(const tGPsdata *p,
       /* Set pressure and strength equals to previous. It will be smoothed later. */
       pt->pressure = pt_before->pressure;
       pt->strength = pt_before->strength;
+      pt->time = invalid_time;
       copy_v4_v4(pt->vert_color, pt_before->vert_color);
     }
   }
@@ -3431,6 +3456,7 @@ static void gpencil_add_guide_points(const tGPsdata *p,
       /* Set pressure and strength equals to previous. It will be smoothed later. */
       pt->pressure = pt_before->pressure;
       pt->strength = pt_before->strength;
+      pt->time = invalid_time;
       copy_v4_v4(pt->vert_color, pt_before->vert_color);
     }
   }

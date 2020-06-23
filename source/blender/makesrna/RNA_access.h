@@ -840,6 +840,7 @@ void RNA_property_float_ui_range(PointerRNA *ptr,
                                  float *precision);
 
 int RNA_property_float_clamp(PointerRNA *ptr, PropertyRNA *prop, float *value);
+int RNA_property_double_clamp(PointerRNA *ptr, PropertyRNA *prop, double *value);
 int RNA_property_int_clamp(PointerRNA *ptr, PropertyRNA *prop, int *value);
 
 bool RNA_enum_identifier(const EnumPropertyItem *item, const int value, const char **identifier);
@@ -959,7 +960,9 @@ void RNA_property_int_get_default_array(PointerRNA *ptr, PropertyRNA *prop, int 
 int RNA_property_int_get_default_index(PointerRNA *ptr, PropertyRNA *prop, int index);
 
 float RNA_property_float_get(PointerRNA *ptr, PropertyRNA *prop);
+double RNA_property_double_get(PointerRNA *ptr, PropertyRNA *prop);
 void RNA_property_float_set(PointerRNA *ptr, PropertyRNA *prop, float value);
+void RNA_property_double_set(PointerRNA *ptr, PropertyRNA *prop, double value);
 void RNA_property_float_get_array(PointerRNA *ptr, PropertyRNA *prop, float *values);
 void RNA_property_float_get_array_range(PointerRNA *ptr, PropertyRNA *prop, float values[2]);
 float RNA_property_float_get_index(PointerRNA *ptr, PropertyRNA *prop, int index);
@@ -1166,6 +1169,9 @@ float RNA_float_get(PointerRNA *ptr, const char *name);
 void RNA_float_set(PointerRNA *ptr, const char *name, float value);
 void RNA_float_get_array(PointerRNA *ptr, const char *name, float *values);
 void RNA_float_set_array(PointerRNA *ptr, const char *name, const float *values);
+
+double RNA_double_get(PointerRNA *ptr, const char *name);
+void RNA_double_set(PointerRNA *ptr, const char *name, double value);
 
 int RNA_enum_get(PointerRNA *ptr, const char *name);
 void RNA_enum_set(PointerRNA *ptr, const char *name, int value);
